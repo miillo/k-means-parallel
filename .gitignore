@@ -1,8 +1,11 @@
 *.class
 *.log
+
+# My ignore files
 /target
-/project
+/project/target
+/project/project
 .idea
 
 # Source data directory
-DataSets
+/DataSets
