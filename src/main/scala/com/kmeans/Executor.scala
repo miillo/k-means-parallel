@@ -1,12 +1,11 @@
 package com.kmeans
 
 import com.kmeans.utils.ApplicationProperties
-import org.apache.spark.sql.{Column, DataFrame, Row, SparkSession}
+import org.apache.spark.sql.{Column, Row, SparkSession}
 import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types.{FloatType, StructField, StructType}
 
-import scala.collection.mutable
-import scala.collection.mutable.{ArrayBuffer, ListBuffer}
-import scala.math.Integral.Implicits.infixIntegralOps
+import scala.collection.mutable.ListBuffer
 import scala.util.Random
 
 object Executor {
@@ -23,20 +22,16 @@ object Executor {
     //save class column
     val classCol = sourceDf.col("class")
     //delete class column
-    val withoutClass = sourceDf.drop("class")
+    val withoutClass = sourceDf
+      .drop("class")
 
+    // compute rows with max / min columns values for init centroid position drawing
     val maxCols: Array[Column] = withoutClass.columns.map(max)
     val minCols: Array[Column] = withoutClass.columns.map(min)
     val maxRow: Row = withoutClass.agg(maxCols.head, maxCols.tail: _*).head
     val minRow: Row = withoutClass.agg(minCols.head, minCols.tail: _*).head
 
-    //[
-    //(...)
-    //]
-    var centroidsInit: ListBuffer[ArrayBuffer[Float]] = new mutable.ListBuffer[ArrayBuffer[Float]]
-
-    println(maxRow.length)
-    println("k: " + properties.kParam)
+    val centroidsInit: ListBuffer[ListBuffer[Float]] = new ListBuffer[ListBuffer[Float]]
 
     //draw initial values for centroids
     for (i <- 0 until maxRow.length) {
@@ -46,21 +41,36 @@ object Executor {
         val end = maxRow.get(i).asInstanceOf[String].toFloat
         val draw = start + (end - start) * Random.nextFloat()
         if (centroidsInit.size < properties.kParam) {
-          centroidsInit += ArrayBuffer(draw)
+          centroidsInit += ListBuffer(draw)
         } else {
           centroidsInit(j) += draw
         }
       }
     }
 
-    println(centroidsInit.size)
-    centroidsInit.foreach(el => println(el))
+    // create centroids df schema
+    val fieldsList = new ListBuffer[StructField]
+    for (i <- 0 until maxRow.length) {
+      fieldsList += StructField("_c" + i, FloatType, nullable = false)
+    }
 
+    // create centroids df
+    val mappedCentroids = centroidsInit.map(el => Row.fromSeq(el))
+    val centRdd = sparkSession.sparkContext.makeRDD(mappedCentroids)
+    val centroidsDf = sparkSession.createDataFrame(centRdd, StructType(fieldsList))
+    centroidsDf.show(20,false)
 
- //   for (i <- 0 until centroidsInit.length) {
- //     centroidsInit(i).toDF(withoutClass.columns: _*)
-  //  }
-//cast generated values to df TODO
-  centroidsInit(1).toDF().show(10, false)
+    // for each point xi ..
+    val sourceDataDfPrepared = withoutClass
+      .withColumn("clusterDecision", lit(1))
+
+    //todo uh not sure but holding centroids in df may had been wrong idea... no way to iterate it as i wanted
+//    sourceDataDfPrepared
+//      .map(el => {
+//        for (row <- centroidsDf) {
+//
+//        }
+//      })
+
   }
 }
