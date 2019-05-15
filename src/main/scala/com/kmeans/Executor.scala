@@ -10,7 +10,6 @@ import scala.util.Random
 
 object Executor {
   def execute(sparkSession: SparkSession, properties: ApplicationProperties): Unit = {
-    import sparkSession.implicits._
 
     //read source data
     val sourceDf = sparkSession.read.format("csv")
@@ -21,10 +20,17 @@ object Executor {
 
     //test area
     //*************************
-    //    val el = Row(1,2,3,4,5)
-    //    val wob = el.toSeq
-    //
-    //    println(wob.updated(2,5))
+//    import sparkSession.implicits._
+//    val df = Seq((1, "one"), (2, "two"), (3, "three")).toDF()
+//    df.show(10)
+//
+//    val col = df.col("_2")
+//    val dropped = df.drop("_2")
+//    val dropclone = sparkSession.createDataFrame(dropped.rdd, dropped.schema)
+//    dropclone.show(10)
+//    println(col)
+//
+//    dropclone.withColumn("_2", col).show(10)
     //*************************
 
     //save class column
@@ -101,23 +107,38 @@ object Executor {
         Row.fromSeq(updatedRow)
       })
 
-    val testDf = sparkSession
+    var testDf = sparkSession
       .createDataFrame(newClusters, StructType(fieldsList))
 
-    println("??????????")
-    val decCol = testDf.col("clusterDecision")
-    //is there event antyhing ?!
-    println(decCol)
-    val omg = testDf.select(testDf.columns.init.map(c => col(c).cast(FloatType)): _*)
-    val omgomg = omg.withColumn("clusterDecision", decCol)
+    testDf.show(10)
+    testDf.printSchema()
 
-    omgomg.printSchema()
-    omgomg.show(20)
-
-    for (centroid <- centroidsInit) {
-      val centroidName = centroid._1
-
+    for (colName <- testDf.columns) {
+      if (colName == "clusterDecision") {
+        println("HIHI")
+        testDf = testDf.withColumn(colName, col(colName).cast("String"))
+      } else {
+        testDf = testDf.withColumn(colName, col(colName).cast("float"))
+      }
     }
+
+    testDf.show(10)
+    testDf.printSchema()
+    //
+//    println("??????????")
+//    val decCol = testDf.col("clusterDecision")
+//    //is there event antyhing ?!
+//    println(decCol)
+//    val omg = testDf.select(testDf.columns.init.map(c => col(c).cast(FloatType)): _*)
+//    val omgomg = omg.withColumn("clusterDecision", decCol)
+//
+//    omgomg.printSchema()
+//    omgomg.show(20)
+//
+//    for (centroid <- centroidsInit) {
+//      val centroidName = centroid._1
+//
+//    }
 //    println("WOBO2")
 //    newClusters.take(20).foreach(println)
   }
