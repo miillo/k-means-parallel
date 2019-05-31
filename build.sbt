@@ -4,7 +4,6 @@ name := "k-means-parallel"
 
 version := "0.1"
 
-scalaVersion := "2.12.8"
+scalaVersion := "2.11.12"
 
-libraryDependencies ++= spark :+ scallop :+ typeSafeConfig :+ scalaMeter
-
+libraryDependencies ++= spark ++ vegas :+ scallop :+ typeSafeConfig :+ scalaMeter

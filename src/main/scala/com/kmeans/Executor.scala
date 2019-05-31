@@ -6,6 +6,10 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{LongType, StringType, StructField, StructType}
 import org.apache.spark.sql.{Column, DataFrame, Row, SparkSession}
 import org.scalameter._
+import vegas.DSL.Vegas
+import vegas.sparkExt._
+import vegas.spec.Spec.MarkEnums.Point
+import vegas.spec.Spec.TypeEnums.{Nominal, Quantitative}
 
 import scala.collection.mutable.ListBuffer
 import scala.util.Random
@@ -115,9 +119,22 @@ object Executor {
     println("PERFORMANCE TIME: " + performanceTime.toString())
 
     //join computed values with validation dataframe and show results
-    centroidsUpdateDf
+    val resultDf = centroidsUpdateDf
       .join(validationDf, centroidsUpdateDf.col("ID") === validationDf.col("ID"))
-      .show(150)
+
+    resultDf.show(150)
+
+Vegas("WOBO",width = 600.0,height = 400.0)
+      .withDataFrame(resultDf)
+      .mark(Point)
+      .encodeX("_c0")
+        .encodeY("_c1")
+        .encodeColor("clusterDecision", Nominal)
+      .encodeSize("_c0", Quantitative)
+        //.encodeShape("Origin", Nominal)
+
+  .show
+
   }
 
   /**
