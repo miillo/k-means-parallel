@@ -3,6 +3,9 @@ package com.kmeans
 import com.kmeans.utils.{ApplicationProperties, CliReader}
 import org.apache.spark.sql.SparkSession
 
+/**
+  * Main application class
+  */
 object Runner {
   def main(args: Array[String]): Unit = {
     val cliObject = new CliReader(args).createCliObject()
