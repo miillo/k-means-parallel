@@ -15,4 +15,6 @@ case class ApplicationProperties(cliObject: CliObject) {
   val iterations: Int = config.getInt("params.iterations")
   val kParam: Int = config.getInt("params.k")
   val sourceDataPath: String = config.getString("source-data.path")
+  val partitionsNumber: Int = config.getInt("params.partitionsNumber")
+  val sourceDataDelimiter: String = config.getString("source-data.delimiter")
 }

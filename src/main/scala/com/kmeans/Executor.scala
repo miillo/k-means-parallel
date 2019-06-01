@@ -4,7 +4,7 @@ import com.kmeans.services.CentroidService
 import com.kmeans.utils.ApplicationProperties
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{LongType, StringType, StructField, StructType}
-import org.apache.spark.sql.{Column, DataFrame, Row, SparkSession}
+import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import org.scalameter._
 import vegas.DSL.Vegas
 import vegas.sparkExt._
@@ -12,17 +12,25 @@ import vegas.spec.Spec.MarkEnums.Point
 import vegas.spec.Spec.TypeEnums.{Nominal, Quantitative}
 
 import scala.collection.mutable.ListBuffer
-import scala.util.Random
 
 object Executor {
   def execute(sparkSession: SparkSession, properties: ApplicationProperties): Unit = {
     import sparkSession.implicits._
 
     //read source data
-    val sourceDf = sparkSession.read.format("csv")
-      .option("sep", ",")
+    var sourceDf = sparkSession.read.format("csv")
+      .option("sep", properties.sourceDataDelimiter)
       .option("header", value = true)
       .load(properties.sourceDataPath)
+
+    sourceDf.printSchema()
+
+    if (properties.sourceDataPath.contains("diabetic")) {
+      sourceDf = sourceDf
+        .withColumn("class", lit(0))
+        .select("time_in_hospital", "num_lab_procedures", "num_procedures", "num_medications",
+          "number_outpatient", "number_emergency", "number_inpatient", "number_diagnoses", "class")
+    }
 
     val validationDf = prepareValidationDf(sourceDf)
     //NOTE! cache() and count() operations must be performed, instead we will work on new copy every time
@@ -54,7 +62,7 @@ object Executor {
         //create dataframe with new cluster decisions
         val newClustersDf = preparedDfWithClusterDec
           .rdd
-          .repartition(10) // parallel
+          .repartition(properties.partitionsNumber) // parallel
           .map(el => {
           var decision = ""
           var result = Double.MaxValue
@@ -124,17 +132,17 @@ object Executor {
 
     resultDf.show(150)
 
-Vegas("WOBO",width = 600.0,height = 400.0)
+    //plot results:
+    // iris / shapeAgg: _c0,_c1
+    // diabetic: _c5,_c3 || _c6,_c3
+    Vegas("Clustering", width = 600.0, height = 400.0)
       .withDataFrame(resultDf)
       .mark(Point)
-      .encodeX("_c0")
-        .encodeY("_c1")
-        .encodeColor("clusterDecision", Nominal)
+      .encodeX("_c6")
+      .encodeY("_c3")
+      .encodeColor("clusterDecision", Nominal)
       .encodeSize("_c0", Quantitative)
-        //.encodeShape("Origin", Nominal)
-
-  .show
-
+      .show
   }
 
   /**

@@ -14,7 +14,7 @@ object Runner {
     val sparkSession = SparkSession
       .builder()
       .appName("k-means-parallel")
-      .master("local[2]")
+      .master("local[10]")
       .getOrCreate()
 
     Executor.execute(sparkSession, properties)
