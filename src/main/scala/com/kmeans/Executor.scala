@@ -64,29 +64,29 @@ object Executor {
           .rdd
           .repartition(properties.partitionsNumber) // parallel
           .map(el => {
-          var decision = ""
-          var result = Double.MaxValue
-          //compute point distance to each centroid and choose the least
-          for (centroid <- centroidsInit) {
-            var distTmp = 0.0
-            // '- 2' because last two are reserved for 'clusterDecision' and ID attributes
-            for (i <- 0 until el.length - 2) {
-              distTmp += scala.math.pow(centroid._2(i) - el.get(i).asInstanceOf[String].toFloat, 2)
+            var decision = ""
+            var result = Double.MaxValue
+            //compute point distance to each centroid and choose the least
+            for (centroid <- centroidsInit) {
+              var distTmp = 0.0
+              // '- 2' because last two are reserved for 'clusterDecision' and ID attributes
+              for (i <- 0 until el.length - 2) {
+                distTmp += scala.math.pow(centroid._2(i) - el.get(i).asInstanceOf[String].toFloat, 2)
+              }
+              //euclidean distance
+              val res = scala.math.sqrt(distTmp)
+              if (res < result) {
+                result = res
+                decision = centroid._1
+              }
             }
-            //euclidean distance
-            val res = scala.math.sqrt(distTmp)
-            if (res < result) {
-              result = res
-              decision = centroid._1
-            }
-          }
-          //update cluster decision
-          val clusterDecIndex = el.fieldIndex("clusterDecision")
-          val updatedRow = el
-            .toSeq
-            .updated(clusterDecIndex, decision)
-          Row.fromSeq(updatedRow)
-        }).coalesce(1)
+            //update cluster decision
+            val clusterDecIndex = el.fieldIndex("clusterDecision")
+            val updatedRow = el
+              .toSeq
+              .updated(clusterDecIndex, decision)
+            Row.fromSeq(updatedRow)
+          }).coalesce(1)
 
         //update temporary dataframe with new centroids values
         centroidsUpdateDf = sparkSession
@@ -138,8 +138,8 @@ object Executor {
     Vegas("Clustering", width = 600.0, height = 400.0)
       .withDataFrame(resultDf)
       .mark(Point)
-      .encodeX("_c6")
-      .encodeY("_c3")
+      .encodeX("_c0")
+      .encodeY("_c1")
       .encodeColor("clusterDecision", Nominal)
       .encodeSize("_c0", Quantitative)
       .show
